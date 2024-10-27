@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     const uploadResults = await Promise.all(
       files.map(async (file) => {
         const buffer = Buffer.from(await file.arrayBuffer());
-        // Ensure folder path ends with slash and remove any double slashes
         const normalizedPath = `${folderPath.replace(/\/*$/, '')}/`;
         const fileName = `${normalizedPath}-${file.name.replace(/\s/g, '_')}`;
 
@@ -32,11 +31,10 @@ export async function POST(request: NextRequest) {
           Key: fileName,
           Body: buffer,
           ContentType: file.type,
-        //   ACL: 'public-read',
         };
 
         const uploadResult = await s3.upload(params).promise();
-        console.log('Uploaded image URL:', uploadResult.Location); // Added this line
+        console.log('Uploaded image URL:', uploadResult.Location); 
         return {
           originalName: file.name,
           url: uploadResult.Location,

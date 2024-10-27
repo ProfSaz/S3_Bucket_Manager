@@ -1,4 +1,3 @@
-// app/components/FileUpload.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -247,7 +246,7 @@ export default function FileUpload() {
         <div className="space-y-2">
           <h3 className="font-semibold">Selected Files:</h3>
           {files.map((file, index) => (
-            <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+            <div key={index} className="flex items-center justify-between text-black bg-gray-50 p-2 rounded">
               <span className="truncate">{file.name}</span>
               <button
                 onClick={() => setFiles(files.filter((_, i) => i !== index))}
@@ -281,14 +280,14 @@ export default function FileUpload() {
           <h3 className="font-semibold">Files in Current Folder</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {folderFiles.map((file) => (
-              <div key={file.key} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                <div className="truncate">
+              <div key={file.key} className="flex items-center justify-between bg-blue-500 p-3 rounded-lg">
+                <div className="">
                   <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-white">
                     {new Date(file.lastModified).toLocaleDateString()}
                   </p>
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-white">
                   {(file.size / 1024).toFixed(1)} KB
                 </span>
               </div>
