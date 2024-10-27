@@ -1,12 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Folder, Plus, ChevronRight, Home } from 'lucide-react';
-
+import { 
+    Upload, 
+    X, 
+    Folder, 
+    Plus, 
+    ChevronRight, 
+    Home, 
+    Trash2, 
+    Loader2,
+    AlertCircle
+  } from 'lucide-react';
 interface UploadedFile {
   originalName: string;
   url: string;
   folder: string;
+}
+
+interface LoadingStates {
+    folderFetch: boolean;
+    folderCreate: boolean;
+    deleteItem: string | null; // stores path of item being deleted
+}
+  
+interface DeleteDialogProps {
+    isOpen: boolean;
+    itemName: string;
+    isFolder: boolean;
+    onConfirm: () => void;
+    onCancel: () => void;
 }
 
 interface FolderInfo {
@@ -75,6 +98,34 @@ export default function FileUpload() {
       setFiles(Array.from(e.target.files));
       setError(null);
       setUploadedFiles([]);
+    }
+  };
+
+  const handleDelete = async (path: string, isFolder: boolean) => {
+    if (!confirm(`Are you sure you want to delete this ${isFolder ? 'folder' : 'file'}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/folders/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path, isFolder }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Delete failed');
+      }
+
+      // Refresh the current folder contents
+      await fetchFolderContents(currentFolder);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete failed');
+      console.error('Error deleting:', err);
     }
   };
 
@@ -203,22 +254,33 @@ export default function FileUpload() {
 
       {/* Folders Grid */}
       {folders.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-semibold">Folders</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {folders.map((folder) => (
-              <button
-                key={folder.path}
-                onClick={() => handleFolderClick(folder.path)}
-                className="flex items-center space-x-2 p-3 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50"
-              >
-                <Folder className="h-5 w-5 text-blue-500" />
-                <span className="truncate">{folder.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+            <div className="space-y-4">
+            <h3 className="font-semibold">Folders</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {folders.map((folder) => (
+                <div key={folder.path} 
+                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-500 group">
+                    <button
+                    onClick={() => handleFolderClick(folder.path)}
+                    className="flex items-center space-x-2 flex-grow"
+                    >
+                    <Folder className="h-5 w-5 text-blue-500" />
+                    <span className="truncate">{folder.name}</span>
+                    </button>
+                    <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(folder.path, true);
+                    }}
+                    className="hidden group-hover:block text-red-500 hover:text-red-700 ml-2"
+                    >
+                    <Trash2 className="h-4 w-4" />
+                    </button>
+                </div>
+                ))}
+            </div>
+            </div>
+        )}
 
       {/* File Upload Section */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
@@ -276,25 +338,33 @@ export default function FileUpload() {
 
       {/* Files in Current Folder */}
       {folderFiles.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-semibold">Files in Current Folder</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {folderFiles.map((file) => (
-              <div key={file.key} className="flex items-center justify-between bg-blue-500 p-3 rounded-lg">
-                <div className="">
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-white">
-                    {new Date(file.lastModified).toLocaleDateString()}
-                  </p>
+            <div className="space-y-4">
+            <h3 className="font-semibold">Files in Current Folder</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {folderFiles.map((file) => (
+                <div key={file.key} className="flex items-center justify-between bg-blue-50 p-3 rounded-lg group">
+                    <div className="flex-grow">
+                    <p className="font-medium">{file.name}</p>
+                    <p className="text-sm text-gray-500">
+                        {new Date(file.lastModified).toLocaleDateString()}
+                    </p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-500">
+                        {(file.size / 1024).toFixed(1)} KB
+                    </span>
+                    <button
+                        onClick={() => handleDelete(file.key, false)}
+                        className="hidden group-hover:block text-red-500 hover:text-red-700"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </button>
+                    </div>
                 </div>
-                <span className="text-sm text-white">
-                  {(file.size / 1024).toFixed(1)} KB
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                ))}
+            </div>
+            </div>
+        )}
     </div>
   );
 }
