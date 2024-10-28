@@ -21,47 +21,47 @@ export async function GET(request: Request) {
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME.replace(/\/$/, ''),
       Delimiter: '/',
-      Prefix: prefix
+      Prefix: prefix,
     };
 
     const data = await s3.listObjects(params).promise();
-    
+
     // Process folders (CommonPrefixes)
-    const folders = data.CommonPrefixes
-      ?.map(prefix => {
+    const folders =
+      data.CommonPrefixes?.map((prefix) => {
         const folderPath = prefix.Prefix || '';
         const folderName = folderPath.split('/').slice(-2)[0]; // Get the last folder name
         return {
           path: folderPath,
-          name: folderName || 'Root'
+          name: folderName || 'Root',
         };
       }) || [];
 
     // Process files
-    const files = data.Contents
-      ?.filter(item => (item.Key || '').slice(-1) !== '/') // Filter out folder markers
-      .map(item => ({
-        key: item.Key || '',
-        name: item.Key?.split('/').pop() || '',
-        lastModified: item.LastModified,
-        size: item.Size
-      })) || [];
+    const files =
+      data.Contents?.filter((item) => (item.Key || '').slice(-1) !== '/') // Filter out folder markers
+        .map((item) => ({
+          key: item.Key || '',
+          name: item.Key?.split('/').pop() || '',
+          lastModified: item.LastModified,
+          size: item.Size,
+        })) || [];
 
     // Calculate breadcrumb trail
-    const breadcrumbs = prefix.split('/')
+    const breadcrumbs = prefix
+      .split('/')
       .filter(Boolean)
       .map((part, index, array) => ({
         name: part,
-        path: array.slice(0, index + 1).join('/') + '/'
+        path: array.slice(0, index + 1).join('/') + '/',
       }));
 
     return NextResponse.json({
       folders,
       files,
       currentPrefix: prefix,
-      breadcrumbs: [{ name: 'Root', path: '' }, ...breadcrumbs]
+      breadcrumbs: [{ name: 'Root', path: '' }, ...breadcrumbs],
     });
-
   } catch (error) {
     console.error('Error fetching folders:', error);
     return NextResponse.json(

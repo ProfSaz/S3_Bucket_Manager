@@ -15,23 +15,24 @@ export async function POST(request: Request) {
     }
 
     const { folderPath } = await request.json();
-    
+
     // Ensure the folder path ends with a forward slash
-    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const normalizedPath = folderPath.endsWith('/')
+      ? folderPath
+      : `${folderPath}/`;
 
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME.replace(/\/$/, ''),
       Key: normalizedPath,
-      Body: '' // Empty object to represent folder
+      Body: '', // Empty object to represent folder
     };
 
     await s3.putObject(params).promise();
 
-    return NextResponse.json({ 
-      success: true, 
-      folderPath: normalizedPath 
+    return NextResponse.json({
+      success: true,
+      folderPath: normalizedPath,
     });
-    
   } catch (error) {
     console.error('Error creating folder:', error);
     return NextResponse.json(

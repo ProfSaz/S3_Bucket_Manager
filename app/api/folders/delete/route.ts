@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       // List all objects in folder
       const listParams = {
         Bucket: bucket,
-        Prefix: path
+        Prefix: path,
       };
 
       const listedObjects = await s3.listObjects(listParams).promise();
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
         const deleteParams = {
           Bucket: bucket,
           Delete: {
-            Objects: listedObjects.Contents.map(({ Key }) => ({ Key: Key! }))
-          }
+            Objects: listedObjects.Contents.map(({ Key }) => ({ Key: Key! })),
+          },
         };
 
         await s3.deleteObjects(deleteParams).promise();
@@ -41,22 +41,18 @@ export async function POST(request: Request) {
       // Delete single file
       const deleteParams = {
         Bucket: bucket,
-        Key: path
+        Key: path,
       };
 
       await s3.deleteObject(deleteParams).promise();
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Successfully deleted ${isFolder ? 'folder' : 'file'}`
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${isFolder ? 'folder' : 'file'}`,
     });
-    
   } catch (error) {
     console.error('Error deleting:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }
