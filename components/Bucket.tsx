@@ -142,7 +142,6 @@ export default function BucketUI() {
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
         <input
           type="file"
-          accept="image/*"
           onChange={handleFileChange}
           className="hidden"
           id="file-upload"
@@ -153,7 +152,7 @@ export default function BucketUI() {
           className="cursor-pointer flex flex-col items-center space-y-2"
         >
           <Upload className="h-12 w-12 text-gray-400" />
-          <span className="text-gray-600">Click to select multiple images</span>
+          <span className="text-gray-600">Click to select multiple files</span>
         </label>
       </div>
 

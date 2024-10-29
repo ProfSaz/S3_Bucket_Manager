@@ -13,6 +13,7 @@ export const useFileHook = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isFolderUpload, setIsFolderUpload] = useState(false); // Toggle for file/folder selection
   const [currentFolder, setCurrentFolder] = useState('');
   const [folders, setFolders] = useState<FolderInfo[]>([]);
   const [folderFiles, setFolderFiles] = useState<FileInfo[]>([]);

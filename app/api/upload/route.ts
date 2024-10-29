@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       files.map(async (file) => {
         const buffer = Buffer.from(await file.arrayBuffer());
         const normalizedPath = `${folderPath.replace(/\/*$/, '')}/`;
-        const fileName = `${normalizedPath}-${file.name.replace(/\s/g, '_')}`;
+        const fileName = `${normalizedPath}${file.name.replace(/\s/g, '_')}`;
 
         const params = {
           Bucket: process.env.AWS_BUCKET_NAME!,
