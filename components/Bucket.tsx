@@ -9,9 +9,17 @@ import {
   Home,
   Trash2,
   Loader2,
+  Check,
 } from 'lucide-react';
 import DeleteDialog from './DeleteDialog';
 import { useFileHook } from '@/lib/hooks';
+
+declare module 'react' {
+  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+    webkitdirectory?: string | boolean;
+    directory?: string | boolean;
+  }
+}
 
 export default function BucketUI() {
   const {
@@ -20,6 +28,11 @@ export default function BucketUI() {
     uploading,
     error,
     currentFolder,
+    fileInputRef,
+    folderInputRef,
+    uploadProgress,
+    successMessages,
+    uploadedFiles,
     folders,
     folderFiles,
     breadcrumbs,
@@ -30,12 +43,15 @@ export default function BucketUI() {
     setNewFolderName,
     setFiles,
     setShowNewFolderInput,
+    setUploadProgress,
+    setSuccessMessages,
     setDeleteDialog,
     handleFolderClick,
     handleFileChange,
     handleDelete,
     confirmDelete,
     handleCreateFolder,
+    handleFolderSelect,
     handleUpload,
   } = useFileHook();
 
@@ -62,6 +78,63 @@ export default function BucketUI() {
             </button>
           </div>
         ))}
+      </div>
+      {/* Upload Section */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 space-y-6">
+        <div className="flex justify-center space-x-4">
+          {/* File Upload Button */}
+          <div className="text-center">
+            <input
+              type="file"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+              ref={fileInputRef}
+              multiple
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer flex flex-col items-center space-y-2 p-4 rounded-lg hover:bg-gray-50"
+            >
+              <Upload className="h-8 w-8 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700">
+                Select Files
+              </span>
+            </label>
+          </div>
+
+          {/* Folder Upload Button */}
+          <div className="text-center">
+            <input
+              type="file"
+              onChange={handleFolderSelect}
+              className="hidden"
+              id="folder-upload"
+              ref={folderInputRef}
+              webkitdirectory=""
+              directory=""
+            />
+            <label
+              htmlFor="folder-upload"
+              className="cursor-pointer flex flex-col items-center space-y-2 p-4 rounded-lg hover:bg-gray-50"
+            >
+              <Folder className="h-8 w-8 text-blue-500" />
+              <span className="text-sm font-medium text-gray-700">
+                Select Folder
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Upload Progress */}
+        {Object.keys(uploadProgress).length > 0 && (
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress.total || 0}%` }}
+            ></div>
+          </div>
+        )}
       </div>
 
       {/* Folder Creation */}
@@ -138,24 +211,6 @@ export default function BucketUI() {
         </div>
       )}
 
-      {/* File Upload Section */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-        <input
-          type="file"
-          onChange={handleFileChange}
-          className="hidden"
-          id="file-upload"
-          multiple
-        />
-        <label
-          htmlFor="file-upload"
-          className="cursor-pointer flex flex-col items-center space-y-2"
-        >
-          <Upload className="h-12 w-12 text-gray-400" />
-          <span className="text-gray-600">Click to select multiple files</span>
-        </label>
-      </div>
-
       {/* Selected Files List */}
       {files.length > 0 && (
         <div className="space-y-2">
@@ -163,7 +218,7 @@ export default function BucketUI() {
           {files.map((file, index) => (
             <div
               key={index}
-              className="flex items-center justify-between text-black bg-gray-50 p-2 rounded"
+              className="flex items-center justify-between bg-gray-50 p-2 rounded"
             >
               <span className="truncate">{file.name}</span>
               <button
@@ -180,10 +235,38 @@ export default function BucketUI() {
             disabled={uploading}
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            {uploading
-              ? 'Uploading...'
-              : `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`}
+            {uploading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Uploading...</span>
+              </div>
+            ) : (
+              `Upload ${files.length} file${files.length !== 1 ? 's' : ''}`
+            )}
           </button>
+        </div>
+      )}
+
+      {/* Success Messages */}
+      {successMessages.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2 text-green-600">
+            {/* <Check className="h-5 w-5" /> */}
+            <h3 className="font-semibold">Upload Successful:</h3>
+          </div>
+          {successMessages.map((message, index) => (
+            <div key={index} className="bg-green-50 p-3 rounded-lg">
+              <p className="font-medium">{message.name}</p>
+              <a
+                href={message.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-500 hover:text-blue-600 truncate block"
+              >
+                {message.url}
+              </a>
+            </div>
+          ))}
         </div>
       )}
 

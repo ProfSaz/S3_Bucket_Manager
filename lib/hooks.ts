@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   UploadedFile,
   LoadingStates,
@@ -31,6 +31,15 @@ export const useFileHook = () => {
     itemName: '',
     isFolder: false,
   });
+
+  const [uploadProgress, setUploadProgress] = useState<{
+    [key: string]: number;
+  }>({});
+  const [successMessages, setSuccessMessages] = useState<
+    { url: string; name: string }[]
+  >([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -69,10 +78,11 @@ export const useFileHook = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
+    if (e.target.files) {
       setFiles(Array.from(e.target.files));
       setError(null);
-      setUploadedFiles([]);
+      setUploadProgress({});
+      setSuccessMessages([]);
     }
   };
 
@@ -159,36 +169,57 @@ export const useFileHook = () => {
     setUploading(true);
     setError(null);
 
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    formData.append('folderPath', currentFolder || '');
+
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('files', file);
-      });
-      formData.append('folderPath', currentFolder);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload');
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = (event.loaded / event.total) * 100;
+          setUploadProgress((prev) => ({
+            ...prev,
+            total: progress,
+          }));
+        }
+      };
 
-      const data = await response.json();
+      xhr.onload = async () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.response);
+          if (response.success) {
+            setSuccessMessages(response.files);
+            setFiles([]);
+            setUploadProgress({});
+          }
+        } else {
+          console.error('Upload failed');
+        }
+      };
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
-      }
+      xhr.onerror = () => {
+        console.error('Upload failed');
+      };
 
-      setUploadedFiles(data.files);
-      setFiles([]);
-      const fileInput = document.querySelector(
-        'input[type="file"]'
-      ) as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-
-      await fetchFolderContents(currentFolder);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      xhr.send(formData);
+    } catch (error) {
+      console.error('Upload error:', error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      setFiles(Array.from(files));
+      setUploadProgress({});
+      setSuccessMessages([]);
     }
   };
 
@@ -197,6 +228,10 @@ export const useFileHook = () => {
     files,
     uploading,
     uploadedFiles,
+    uploadProgress,
+    successMessages,
+    fileInputRef,
+    folderInputRef,
     error,
     currentFolder,
     folders,
@@ -209,8 +244,11 @@ export const useFileHook = () => {
     setNewFolderName,
     setFiles,
     setShowNewFolderInput,
+    setSuccessMessages,
+    setUploadProgress,
     setDeleteDialog,
     handleFolderClick,
+    handleFolderSelect,
     handleFileChange,
     handleDelete,
     confirmDelete,
