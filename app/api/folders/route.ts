@@ -1,11 +1,12 @@
-// app/api/folders/route.ts
 import { NextResponse } from 'next/server';
-import { S3 } from 'aws-sdk';
+import { S3Client, ListObjectsCommand } from '@aws-sdk/client-s3';
 
-const s3 = new S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
+const s3Client = new S3Client({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+  region: process.env.AWS_REGION!,
 });
 
 export async function GET(request: Request) {
@@ -18,13 +19,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const prefix = searchParams.get('prefix') || '';
 
-    const params = {
+    const command = new ListObjectsCommand({
       Bucket: process.env.AWS_BUCKET_NAME.replace(/\/$/, ''),
       Delimiter: '/',
       Prefix: prefix,
-    };
+    });
 
-    const data = await s3.listObjects(params).promise();
+    const data = await s3Client.send(command);
 
     // Process folders (CommonPrefixes)
     const folders =

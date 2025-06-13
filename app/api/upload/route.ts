@@ -1,10 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { S3 } from 'aws-sdk';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const s3 = new S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
+const s3Client = new S3Client({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+  region: process.env.AWS_REGION!,
 });
 
 export async function POST(request: NextRequest) {
@@ -23,18 +25,22 @@ export async function POST(request: NextRequest) {
         const normalizedPath = `${folderPath.replace(/\/*$/, '')}/`;
         const fileName = `${normalizedPath}${file.name.replace(/\s/g, '_')}`;
 
-        const params = {
+        const command = new PutObjectCommand({
           Bucket: process.env.AWS_BUCKET_NAME!,
           Key: fileName,
           Body: buffer,
           ContentType: file.type,
-        };
+        });
 
-        const uploadResult = await s3.upload(params).promise();
-        console.log('Uploaded image URL:', uploadResult.Location);
+        await s3Client.send(command);
+        
+        // Construct the URL manually since AWS SDK v3 doesn't return Location
+        const uploadUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+        
+        console.log('Uploaded image URL:', uploadUrl);
         return {
           originalName: file.name,
-          url: uploadResult.Location,
+          url: uploadUrl,
           folder: normalizedPath,
         };
       })

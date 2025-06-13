@@ -1,11 +1,17 @@
-// app/api/delete/route.ts
 import { NextResponse } from 'next/server';
-import { S3 } from 'aws-sdk';
+import { 
+  S3Client, 
+  ListObjectsCommand, 
+  DeleteObjectsCommand, 
+  DeleteObjectCommand 
+} from '@aws-sdk/client-s3';
 
-const s3 = new S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
+const s3Client = new S3Client({
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+  region: process.env.AWS_REGION!,
 });
 
 export async function POST(request: Request) {
@@ -19,32 +25,32 @@ export async function POST(request: Request) {
 
     if (isFolder) {
       // List all objects in folder
-      const listParams = {
+      const listCommand = new ListObjectsCommand({
         Bucket: bucket,
         Prefix: path,
-      };
+      });
 
-      const listedObjects = await s3.listObjects(listParams).promise();
+      const listedObjects = await s3Client.send(listCommand);
 
       if (listedObjects.Contents && listedObjects.Contents.length > 0) {
         // Delete all objects in folder
-        const deleteParams = {
+        const deleteCommand = new DeleteObjectsCommand({
           Bucket: bucket,
           Delete: {
             Objects: listedObjects.Contents.map(({ Key }) => ({ Key: Key! })),
           },
-        };
+        });
 
-        await s3.deleteObjects(deleteParams).promise();
+        await s3Client.send(deleteCommand);
       }
     } else {
       // Delete single file
-      const deleteParams = {
+      const deleteCommand = new DeleteObjectCommand({
         Bucket: bucket,
         Key: path,
-      };
+      });
 
-      await s3.deleteObject(deleteParams).promise();
+      await s3Client.send(deleteCommand);
     }
 
     return NextResponse.json({
